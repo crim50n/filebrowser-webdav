@@ -34,15 +34,4 @@ for patch in "${patches[@]}"; do
   git -C "$SRC_DIR" apply --3way "$patch"
 done
 
-echo "Syncing patched source into workspace"
-rsync -a --delete \
-  --exclude ".git" \
-  --exclude ".github" \
-  --exclude ".upstream-src" \
-  --exclude "patches" \
-  --exclude "scripts" \
-  --exclude ".upstream-default-tag" \
-  --exclude "README.md" \
-  "$SRC_DIR/" "$ROOT_DIR/"
-
-echo "Patched source ready"
+echo "Patched source ready at: $SRC_DIR"

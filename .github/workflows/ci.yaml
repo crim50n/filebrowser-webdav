@@ -36,13 +36,13 @@ jobs:
 
       - uses: pnpm/action-setup@v4
         with:
-          package_json_file: "frontend/package.json"
+          package_json_file: ".upstream-src/frontend/package.json"
       - uses: actions/setup-node@v6
         with:
           node-version: "24.x"
           cache: "pnpm"
-          cache-dependency-path: "frontend/pnpm-lock.yaml"
-      - working-directory: frontend
+          cache-dependency-path: ".upstream-src/frontend/pnpm-lock.yaml"
+      - working-directory: .upstream-src/frontend
         run: |
           pnpm install --frozen-lockfile
           pnpm run lint
@@ -75,6 +75,7 @@ jobs:
       - uses: golangci/golangci-lint-action@v9
         with:
           version: "latest"
+          working-directory: ".upstream-src"
 
   test:
     name: Test
@@ -101,7 +102,8 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version: "1.26.x"
-      - run: go test --race ./...
+      - working-directory: .upstream-src
+        run: go test --race ./...
 
   build:
     name: Build
@@ -132,15 +134,16 @@ jobs:
           go-version: "1.26"
       - uses: pnpm/action-setup@v4
         with:
-          package_json_file: "frontend/package.json"
+          package_json_file: ".upstream-src/frontend/package.json"
       - uses: actions/setup-node@v6
         with:
           node-version: "24.x"
           cache: "pnpm"
-          cache-dependency-path: "frontend/pnpm-lock.yaml"
+          cache-dependency-path: ".upstream-src/frontend/pnpm-lock.yaml"
       - name: Install Task
         uses: go-task/setup-task@v1
-      - run: task build
+      - working-directory: .upstream-src
+        run: task build
 
   release:
     name: Release
@@ -172,19 +175,20 @@ jobs:
           go-version: "1.26"
       - uses: pnpm/action-setup@v4
         with:
-          package_json_file: "frontend/package.json"
+          package_json_file: ".upstream-src/frontend/package.json"
       - uses: actions/setup-node@v6
         with:
           node-version: "24.x"
           cache: "pnpm"
-          cache-dependency-path: "frontend/pnpm-lock.yaml"
+          cache-dependency-path: ".upstream-src/frontend/pnpm-lock.yaml"
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Install Task
         uses: go-task/setup-task@v1
-      - run: task build:frontend
+      - working-directory: .upstream-src
+        run: task build:frontend
 
       - name: Login to GitHub Container Registry (retry)
         run: |
@@ -201,5 +205,6 @@ jobs:
         with:
           version: latest
           args: release --clean
+          workdir: .upstream-src
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

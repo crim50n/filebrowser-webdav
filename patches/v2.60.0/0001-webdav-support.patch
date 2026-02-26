@@ -1,0 +1,573 @@
+diff --git a/cmd/root.go b/cmd/root.go
+index 13139a7e..d36cd3a1 100644
+--- a/cmd/root.go
++++ b/cmd/root.go
+@@ -111,6 +111,7 @@ func addServerFlags(flags *pflag.FlagSet) {
+ 	flags.Bool("disableExec", true, "disables Command Runner feature")
+ 	flags.Bool("disableTypeDetectionByHeader", false, "disables type detection by reading file headers")
+ 	flags.Bool("disableImageResolutionCalc", false, "disables image resolution calculation by reading image files")
++	flags.Bool("enableWebDAV", false, "enables WebDAV feature")
+ }
+ 
+ var rootCmd = &cobra.Command{
+@@ -353,6 +354,10 @@ func getServerSettings(v *viper.Viper, st *storage.Storage) (*settings.Server, e
+ 		server.EnableExec = !v.GetBool("disableExec")
+ 	}
+ 
++	if v.IsSet("enableWebDAV") {
++		server.EnableWebDAV = v.GetBool("enableWebDAV")
++	}
++
+ 	if isAddrSet && isSocketSet {
+ 		return nil, errors.New("--socket flag cannot be used with --address, --port, --key nor --cert")
+ 	}
+@@ -457,6 +462,7 @@ func quickSetup(v *viper.Viper, s *storage.Storage) error {
+ 		EnableThumbnails:      !v.GetBool("disableThumbnails"),
+ 		ResizePreview:         !v.GetBool("disablePreviewResize"),
+ 		EnableExec:            !v.GetBool("disableExec"),
++		EnableWebDAV:          v.GetBool("enableWebDAV"),
+ 		TypeDetectionByHeader: !v.GetBool("disableTypeDetectionByHeader"),
+ 		ImageResolutionCal:    !v.GetBool("disableImageResolutionCalc"),
+ 	}
+diff --git a/frontend/src/i18n/en.json b/frontend/src/i18n/en.json
+index 54b30b22..75160c4f 100644
+--- a/frontend/src/i18n/en.json
++++ b/frontend/src/i18n/en.json
+@@ -197,6 +197,10 @@
+     "tusUploadsHelp": "File Browser supports chunked file uploads, allowing for the creation of efficient, reliable, resumable and chunked file uploads even on unreliable networks.",
+     "tusUploadsChunkSize": "Indicates to maximum size of a request (direct uploads will be used for smaller uploads). You may input a plain integer denoting byte size input or a string like 10MB, 1GB etc.",
+     "tusUploadsRetryCount": "Number of retries to perform if a chunk fails to upload.",
++    "webdav": "WebDAV",
++    "enableWebDAV": "Enable WebDAV",
++    "webdavURL": "Your WebDAV URL is:",
++    "webdavPasswordHint": "(your login password)",
+     "userHomeBasePath": "Base path for user home directories",
+     "userScopeGenerationPlaceholder": "The scope will be auto generated",
+     "createUserHomeDirectory": "Create user home directory",
+diff --git a/frontend/src/types/settings.d.ts b/frontend/src/types/settings.d.ts
+index 18672bdf..4b503964 100644
+--- a/frontend/src/types/settings.d.ts
++++ b/frontend/src/types/settings.d.ts
+@@ -11,6 +11,7 @@ interface ISettings {
+   tus: SettingsTus;
+   shell: string[];
+   commands: SettingsCommand;
++  enableWebDAV: boolean;
+ }
+ 
+ interface SettingsDefaults {
+diff --git a/frontend/src/views/settings/Global.vue b/frontend/src/views/settings/Global.vue
+index 3d391206..2b6ac2f1 100644
+--- a/frontend/src/views/settings/Global.vue
++++ b/frontend/src/views/settings/Global.vue
+@@ -124,6 +124,22 @@
+             />
+           </p>
+ 
++          <h3>{{ t("settings.webdav") }}</h3>
++          <p>
++            <input type="checkbox" v-model="settings.enableWebDAV" />
++            {{ t("settings.enableWebDAV") }}
++          </p>
++          <p v-if="settings.enableWebDAV" class="small">
++            {{ t("settings.webdavURL") }}
++            <code>{{ webdavURL }}</code>
++          </p>
++          <p v-if="settings.enableWebDAV && authStore.user" class="small">
++            {{ t("settings.username") }}: <code>{{ authStore.user.username }}</code>
++          </p>
++          <p v-if="settings.enableWebDAV" class="small">
++            {{ t("settings.password") }}: <code>{{ t("settings.webdavPasswordHint") }}</code>
++          </p>
++
+           <h3>{{ t("settings.tusUploads") }}</h3>
+ 
+           <p class="small">{{ t("settings.tusUploadsHelp") }}</p>
+@@ -251,6 +267,7 @@ import { StatusError } from "@/api/utils";
+ import Rules from "@/components/settings/Rules.vue";
+ import Themes from "@/components/settings/Themes.vue";
+ import UserForm from "@/components/settings/UserForm.vue";
++import { useAuthStore } from "@/stores/auth";
+ import { useLayoutStore } from "@/stores/layout";
+ import { enableExec } from "@/utils/constants";
+ import { getTheme, setTheme } from "@/utils/theme";
+@@ -273,6 +290,7 @@ const $showSuccess = inject<IToastSuccess>("$showSuccess")!;
+ 
+ const { t } = useI18n();
+ 
++const authStore = useAuthStore();
+ const layoutStore = useLayoutStore();
+ 
+ const formattedChunkSize = computed({
+@@ -296,6 +314,10 @@ const formattedChunkSize = computed({
+   },
+ });
+ 
++const webdavURL = computed(() => {
++  return window.location.origin + "/webdav";
++});
++
+ // Define funcs
+ const capitalize = (name: string, where: string | RegExp = "_") => {
+   if (where === "caps") where = /(?=[A-Z])/;
+diff --git a/go.mod b/go.mod
+index 13fb76c9..c7b777b8 100644
+--- a/go.mod
++++ b/go.mod
+@@ -27,6 +27,7 @@ require (
+ 	github.com/tomasen/realip v0.0.0-20180522021738-f0c99a92ddce
+ 	golang.org/x/crypto v0.48.0
+ 	golang.org/x/image v0.36.0
++	golang.org/x/net v0.49.0
+ 	golang.org/x/text v0.34.0
+ 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
+ 	gopkg.in/yaml.v3 v3.0.1
+@@ -77,7 +78,6 @@ require (
+ 	go.uber.org/atomic v1.11.0 // indirect
+ 	go.yaml.in/yaml/v3 v3.0.4 // indirect
+ 	go4.org v0.0.0-20230225012048-214862532bf5 // indirect
+-	golang.org/x/net v0.49.0 // indirect
+ 	golang.org/x/sync v0.19.0 // indirect
+ 	golang.org/x/sys v0.41.0 // indirect
+ 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
+diff --git a/http/http.go b/http/http.go
+index 0ddca969..a03484a6 100644
+--- a/http/http.go
++++ b/http/http.go
+@@ -41,6 +41,7 @@ func NewHandler(
+ 
+ 	r.HandleFunc("/health", healthHandler)
+ 	r.PathPrefix("/static").Handler(static)
++	r.PathPrefix(webDavPrefix).Handler(monkey(webDavHandler, ""))
+ 	r.NotFoundHandler = index
+ 
+ 	api := r.PathPrefix("/api").Subrouter()
+diff --git a/http/settings.go b/http/settings.go
+index a07d322e..4e0fca0c 100644
+--- a/http/settings.go
++++ b/http/settings.go
+@@ -21,6 +21,7 @@ type settingsData struct {
+ 	Tus                   settings.Tus          `json:"tus"`
+ 	Shell                 []string              `json:"shell"`
+ 	Commands              map[string][]string   `json:"commands"`
++	EnableWebDAV          bool                  `json:"enableWebDAV"`
+ }
+ 
+ var settingsGetHandler = withAdmin(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
+@@ -37,6 +38,7 @@ var settingsGetHandler = withAdmin(func(w http.ResponseWriter, r *http.Request,
+ 		Tus:                   d.settings.Tus,
+ 		Shell:                 d.settings.Shell,
+ 		Commands:              d.settings.Commands,
++		EnableWebDAV:          d.server.EnableWebDAV,
+ 	}
+ 
+ 	return renderJSON(w, r, data)
+@@ -60,7 +62,13 @@ var settingsPutHandler = withAdmin(func(_ http.ResponseWriter, r *http.Request,
+ 	d.settings.Shell = req.Shell
+ 	d.settings.Commands = req.Commands
+ 	d.settings.HideLoginButton = req.HideLoginButton
++	d.server.EnableWebDAV = req.EnableWebDAV
+ 
+ 	err = d.store.Settings.Save(d.settings)
++	if err != nil {
++		return errToStatus(err), err
++	}
++
++	err = d.store.Settings.SaveServer(d.server)
+ 	return errToStatus(err), err
+ })
+diff --git a/http/webdav.go b/http/webdav.go
+new file mode 100644
+index 00000000..13e57de1
+--- /dev/null
++++ b/http/webdav.go
+@@ -0,0 +1,123 @@
++package fbhttp
++
++import (
++	"errors"
++	"log"
++	"net/http"
++	"os"
++	"strings"
++	"sync"
++
++	"github.com/filebrowser/filebrowser/v2/users"
++	"golang.org/x/net/webdav"
++)
++
++const webDavPrefix = "/webdav"
++
++var (
++	webDavLocks   = make(map[uint]webdav.LockSystem)
++	webDavLocksMu sync.Mutex
++)
++
++func getLockSystem(uid uint) webdav.LockSystem {
++	webDavLocksMu.Lock()
++	defer webDavLocksMu.Unlock()
++
++	if _, ok := webDavLocks[uid]; !ok {
++		webDavLocks[uid] = webdav.NewMemLS()
++	}
++
++	return webDavLocks[uid]
++}
++
++func webDavPathFromRequest(r *http.Request) string {
++	path := strings.TrimPrefix(r.URL.Path, webDavPrefix)
++	path = strings.TrimPrefix(path, "/")
++	if path == "" {
++		return "."
++	}
++
++	return path
++}
++
++func hasWritePermForPut(user *users.User, target string) bool {
++	if _, err := user.Fs.Stat(target); err == nil {
++		return user.Perm.Modify
++	} else if errors.Is(err, os.ErrNotExist) {
++		return user.Perm.Create
++	}
++
++	return user.Perm.Modify
++}
++
++func hasWebDavPermission(user *users.User, r *http.Request) bool {
++	switch r.Method {
++	case "OPTIONS":
++		return true
++	case "PROPFIND", "GET", "HEAD":
++		return user.Perm.Download
++	case "PUT":
++		return hasWritePermForPut(user, webDavPathFromRequest(r))
++	case "MKCOL":
++		return user.Perm.Create
++	case "DELETE":
++		return user.Perm.Delete
++	case "COPY":
++		return user.Perm.Download && user.Perm.Create
++	case "MOVE":
++		return user.Perm.Rename
++	case "LOCK", "UNLOCK", "PROPPATCH":
++		return user.Perm.Modify
++	default:
++		return user.Perm.Download
++	}
++}
++
++func webDavHandler(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
++	if !d.server.EnableWebDAV {
++		return http.StatusForbidden, nil
++	}
++
++	if r.Method == "OPTIONS" {
++		w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, LOCK, PUT, MKCOL, PROPFIND, PROPPATCH, COPY, MOVE, UNLOCK, DELETE, GET, HEAD")
++		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, Depth, X-Requested-With")
++		w.Header().Set("Access-Control-Allow-Origin", "*")
++		w.Header().Set("DAV", "1, 2")
++		return 0, nil
++	}
++
++	username, password, ok := r.BasicAuth()
++	if !ok {
++		w.Header().Set("WWW-Authenticate", `Basic realm="File Browser"`)
++		return http.StatusUnauthorized, nil
++	}
++
++	user, err := d.store.Users.Get(d.server.Root, username)
++	if err != nil {
++		w.Header().Set("WWW-Authenticate", `Basic realm="File Browser"`)
++		return http.StatusUnauthorized, nil
++	}
++
++	if !users.CheckPwd(password, user.Password) {
++		w.Header().Set("WWW-Authenticate", `Basic realm="File Browser"`)
++		return http.StatusUnauthorized, nil
++	}
++
++	if !hasWebDavPermission(user, r) {
++		return http.StatusForbidden, nil
++	}
++
++	handler := &webdav.Handler{
++		Prefix:     webDavPrefix,
++		FileSystem: &webDavFS{fs: user.Fs},
++		LockSystem: getLockSystem(user.ID),
++		Logger: func(r *http.Request, err error) {
++			if err != nil {
++				log.Printf("WebDAV error: %s [%s]: %v", r.RemoteAddr, r.Method, err)
++			}
++		},
++	}
++
++	handler.ServeHTTP(w, r)
++	return 0, nil
++}
+diff --git a/http/webdav_fs.go b/http/webdav_fs.go
+new file mode 100644
+index 00000000..3942fc6c
+--- /dev/null
++++ b/http/webdav_fs.go
+@@ -0,0 +1,38 @@
++package fbhttp
++
++import (
++	"context"
++	"os"
++
++	"github.com/spf13/afero"
++	"golang.org/x/net/webdav"
++)
++
++type webDavFS struct {
++	fs afero.Fs
++}
++
++func (w *webDavFS) Mkdir(_ context.Context, name string, perm os.FileMode) error {
++	return w.fs.MkdirAll(name, perm)
++}
++
++func (w *webDavFS) OpenFile(_ context.Context, name string, flag int, perm os.FileMode) (webdav.File, error) {
++	f, err := w.fs.OpenFile(name, flag, perm)
++	if err != nil {
++		return nil, err
++	}
++
++	return f, nil
++}
++
++func (w *webDavFS) RemoveAll(_ context.Context, name string) error {
++	return w.fs.RemoveAll(name)
++}
++
++func (w *webDavFS) Rename(_ context.Context, oldName, newName string) error {
++	return w.fs.Rename(oldName, newName)
++}
++
++func (w *webDavFS) Stat(_ context.Context, name string) (os.FileInfo, error) {
++	return w.fs.Stat(name)
++}
+diff --git a/http/webdav_test.go b/http/webdav_test.go
+new file mode 100644
+index 00000000..78f42101
+--- /dev/null
++++ b/http/webdav_test.go
+@@ -0,0 +1,204 @@
++package fbhttp
++
++import (
++	"net/http"
++	"net/http/httptest"
++	"path/filepath"
++	"testing"
++
++	"github.com/asdine/storm/v3"
++	"github.com/spf13/afero"
++
++	"github.com/filebrowser/filebrowser/v2/settings"
++	"github.com/filebrowser/filebrowser/v2/storage/bolt"
++	"github.com/filebrowser/filebrowser/v2/users"
++)
++
++func TestWebDavHandler(t *testing.T) {
++	const password = "password"
++	hashedPassword, err := users.HashPwd(password)
++	if err != nil {
++		t.Fatalf("failed to hash password: %v", err)
++	}
++
++	allPerms := users.Permissions{
++		Admin:    true,
++		Create:   true,
++		Rename:   true,
++		Modify:   true,
++		Delete:   true,
++		Download: true,
++	}
++
++	testCases := map[string]struct {
++		enabled            bool
++		method             string
++		path               string
++		username           string
++		password           string
++		perm               users.Permissions
++		prepareFS          func(fs afero.Fs) error
++		expectedStatusCode int
++	}{
++		"WebDAV disabled": {
++			enabled:            false,
++			method:             "PROPFIND",
++			path:               "/webdav/",
++			username:           "admin",
++			password:           password,
++			perm:               allPerms,
++			expectedStatusCode: http.StatusForbidden,
++		},
++		"WebDAV enabled no auth": {
++			enabled:            true,
++			method:             "PROPFIND",
++			path:               "/webdav/",
++			perm:               allPerms,
++			expectedStatusCode: http.StatusUnauthorized,
++		},
++		"WebDAV enabled wrong password": {
++			enabled:            true,
++			method:             "PROPFIND",
++			path:               "/webdav/",
++			username:           "admin",
++			password:           "wrong",
++			perm:               allPerms,
++			expectedStatusCode: http.StatusUnauthorized,
++		},
++		"WebDAV enabled correct auth": {
++			enabled:            true,
++			method:             "PROPFIND",
++			path:               "/webdav/",
++			username:           "admin",
++			password:           password,
++			perm:               allPerms,
++			expectedStatusCode: http.StatusMultiStatus,
++		},
++		"OPTIONS without auth": {
++			enabled:            true,
++			method:             http.MethodOptions,
++			path:               "/webdav/",
++			perm:               allPerms,
++			expectedStatusCode: http.StatusOK,
++		},
++		"PUT new file requires create permission": {
++			enabled:  true,
++			method:   http.MethodPut,
++			path:     "/webdav/new.txt",
++			username: "admin",
++			password: password,
++			perm: users.Permissions{
++				Admin:    true,
++				Create:   false,
++				Modify:   true,
++				Delete:   true,
++				Rename:   true,
++				Download: true,
++			},
++			expectedStatusCode: http.StatusForbidden,
++		},
++		"PUT existing file requires modify permission": {
++			enabled:  true,
++			method:   http.MethodPut,
++			path:     "/webdav/existing.txt",
++			username: "admin",
++			password: password,
++			perm: users.Permissions{
++				Admin:    true,
++				Create:   true,
++				Modify:   false,
++				Delete:   true,
++				Rename:   true,
++				Download: true,
++			},
++			prepareFS: func(fs afero.Fs) error {
++				return afero.WriteFile(fs, "existing.txt", []byte("x"), 0o644)
++			},
++			expectedStatusCode: http.StatusForbidden,
++		},
++		"DELETE requires delete permission": {
++			enabled:  true,
++			method:   http.MethodDelete,
++			path:     "/webdav/existing.txt",
++			username: "admin",
++			password: password,
++			perm: users.Permissions{
++				Admin:    true,
++				Create:   true,
++				Modify:   true,
++				Delete:   false,
++				Rename:   true,
++				Download: true,
++			},
++			expectedStatusCode: http.StatusForbidden,
++		},
++	}
++
++	for name, tc := range testCases {
++		tc := tc
++		t.Run(name, func(t *testing.T) {
++			dbPath := filepath.Join(t.TempDir(), "db")
++			db, err := storm.Open(dbPath)
++			if err != nil {
++				t.Fatalf("failed to open db: %v", err)
++			}
++			t.Cleanup(func() {
++				_ = db.Close()
++			})
++
++			st, err := bolt.NewStorage(db)
++			if err != nil {
++				t.Fatalf("failed to get storage: %v", err)
++			}
++
++			if err := st.Users.Save(&users.User{
++				Username: "admin",
++				Password: hashedPassword,
++				Perm:     tc.perm,
++			}); err != nil {
++				t.Fatalf("failed to save user: %v", err)
++			}
++
++			if err := st.Settings.Save(&settings.Settings{Key: []byte("key")}); err != nil {
++				t.Fatalf("failed to save settings: %v", err)
++			}
++
++			baseFs := afero.NewBasePathFs(afero.NewMemMapFs(), "/")
++			if tc.prepareFS != nil {
++				if err := tc.prepareFS(baseFs); err != nil {
++					t.Fatalf("failed to prepare fs: %v", err)
++				}
++			}
++
++			st.Users = &customFSUser{
++				Store: st.Users,
++				fs:    baseFs,
++			}
++
++			req := httptest.NewRequest(tc.method, tc.path, nil)
++			if tc.username != "" {
++				req.SetBasicAuth(tc.username, tc.password)
++			}
++
++			recorder := httptest.NewRecorder()
++			status, err := webDavHandler(recorder, req, &data{
++				server: &settings.Server{Root: "/", EnableWebDAV: tc.enabled},
++				store:  st,
++			})
++			if err != nil {
++				t.Fatalf("handler returned error: %v", err)
++			}
++
++			if status != 0 {
++				if status != tc.expectedStatusCode {
++					t.Fatalf("expected status %d, got %d", tc.expectedStatusCode, status)
++				}
++				return
++			}
++
++			if recorder.Result().StatusCode != tc.expectedStatusCode {
++				t.Fatalf("expected status %d, got %d", tc.expectedStatusCode, recorder.Result().StatusCode)
++			}
++		})
++	}
++}
+diff --git a/settings/settings.go b/settings/settings.go
+index d71be16a..e4a8f9a5 100644
+--- a/settings/settings.go
++++ b/settings/settings.go
+@@ -58,6 +58,7 @@ type Server struct {
+ 	EnableThumbnails      bool   `json:"enableThumbnails"`
+ 	ResizePreview         bool   `json:"resizePreview"`
+ 	EnableExec            bool   `json:"enableExec"`
++	EnableWebDAV          bool   `json:"enableWebDAV"`
+ 	TypeDetectionByHeader bool   `json:"typeDetectionByHeader"`
+ 	ImageResolutionCal    bool   `json:"imageResolutionCalculation"`
+ 	AuthHook              string `json:"authHook"`

@@ -72,6 +72,7 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version: "1.26.x"
+          cache-dependency-path: ".upstream-src/go.sum"
       - uses: golangci/golangci-lint-action@v9
         with:
           version: "latest"
@@ -102,6 +103,7 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version: "1.26.x"
+          cache-dependency-path: ".upstream-src/go.sum"
       - working-directory: .upstream-src
         run: go test --race ./...
 
@@ -132,6 +134,7 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version: "1.26"
+          cache-dependency-path: ".upstream-src/go.sum"
       - uses: pnpm/action-setup@v4
         with:
           package_json_file: ".upstream-src/frontend/package.json"
@@ -173,6 +176,7 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version: "1.26"
+          cache-dependency-path: ".upstream-src/go.sum"
       - uses: pnpm/action-setup@v4
         with:
           package_json_file: ".upstream-src/frontend/package.json"
@@ -189,6 +193,14 @@ jobs:
         uses: go-task/setup-task@v1
       - working-directory: .upstream-src
         run: task build:frontend
+
+      - name: Finalize patched source git state
+        run: |
+          git -C .upstream-src config user.name "crim50n"
+          git -C .upstream-src config user.email "crims0n@yandex.ru"
+          git -C .upstream-src add -A
+          git -C .upstream-src commit -m "apply webdav patchset" || true
+          git -C .upstream-src tag -f "${GITHUB_REF_NAME}"
 
       - name: Login to GitHub Container Registry (retry)
         run: |

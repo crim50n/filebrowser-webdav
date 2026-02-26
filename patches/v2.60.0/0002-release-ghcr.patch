@@ -8,8 +8,8 @@ index be192ef8..42c0d420 100644
      image_templates:
 -      - "filebrowser/filebrowser:{{ .Tag }}-amd64"
 -      - "filebrowser/filebrowser:v{{ .Major }}-amd64"
-+      - "ghcr.io/crim50n/filebrowser:{{ .Tag }}-amd64"
-+      - "ghcr.io/crim50n/filebrowser:v{{ .Major }}-amd64"
++      - "ghcr.io/crim50n/filebrowser-webdav:{{ .Tag }}-amd64"
++      - "ghcr.io/crim50n/filebrowser-webdav:v{{ .Major }}-amd64"
      extra_files:
        - docker
    - dockerfile: Dockerfile
@@ -19,8 +19,8 @@ index be192ef8..42c0d420 100644
      image_templates:
 -      - "filebrowser/filebrowser:{{ .Tag }}-arm64"
 -      - "filebrowser/filebrowser:v{{ .Major }}-arm64"
-+      - "ghcr.io/crim50n/filebrowser:{{ .Tag }}-arm64"
-+      - "ghcr.io/crim50n/filebrowser:v{{ .Major }}-arm64"
++      - "ghcr.io/crim50n/filebrowser-webdav:{{ .Tag }}-arm64"
++      - "ghcr.io/crim50n/filebrowser-webdav:v{{ .Major }}-arm64"
      extra_files:
        - docker
    - dockerfile: Dockerfile
@@ -30,8 +30,8 @@ index be192ef8..42c0d420 100644
      image_templates:
 -      - "filebrowser/filebrowser:{{ .Tag }}-armv6"
 -      - "filebrowser/filebrowser:v{{ .Major }}-armv6"
-+      - "ghcr.io/crim50n/filebrowser:{{ .Tag }}-armv6"
-+      - "ghcr.io/crim50n/filebrowser:v{{ .Major }}-armv6"
++      - "ghcr.io/crim50n/filebrowser-webdav:{{ .Tag }}-armv6"
++      - "ghcr.io/crim50n/filebrowser-webdav:v{{ .Major }}-armv6"
      extra_files:
        - docker
    - dockerfile: Dockerfile
@@ -41,8 +41,8 @@ index be192ef8..42c0d420 100644
      image_templates:
 -      - "filebrowser/filebrowser:{{ .Tag }}-armv7"
 -      - "filebrowser/filebrowser:v{{ .Major }}-armv7"
-+      - "ghcr.io/crim50n/filebrowser:{{ .Tag }}-armv7"
-+      - "ghcr.io/crim50n/filebrowser:v{{ .Major }}-armv7"
++      - "ghcr.io/crim50n/filebrowser-webdav:{{ .Tag }}-armv7"
++      - "ghcr.io/crim50n/filebrowser-webdav:v{{ .Major }}-armv7"
      extra_files:
        - docker
  
@@ -52,8 +52,8 @@ index be192ef8..42c0d420 100644
      image_templates:
 -      - "filebrowser/filebrowser:{{ .Tag }}-amd64-s6"
 -      - "filebrowser/filebrowser:v{{ .Major }}-amd64-s6"
-+      - "ghcr.io/crim50n/filebrowser:{{ .Tag }}-amd64-s6"
-+      - "ghcr.io/crim50n/filebrowser:v{{ .Major }}-amd64-s6"
++      - "ghcr.io/crim50n/filebrowser-webdav:{{ .Tag }}-amd64-s6"
++      - "ghcr.io/crim50n/filebrowser-webdav:v{{ .Major }}-amd64-s6"
      extra_files:
        - docker
    - dockerfile: Dockerfile.s6
@@ -63,56 +63,56 @@ index be192ef8..42c0d420 100644
      image_templates:
 -      - "filebrowser/filebrowser:{{ .Tag }}-arm64-s6"
 -      - "filebrowser/filebrowser:v{{ .Major }}-arm64-s6"
-+      - "ghcr.io/crim50n/filebrowser:{{ .Tag }}-arm64-s6"
-+      - "ghcr.io/crim50n/filebrowser:v{{ .Major }}-arm64-s6"
++      - "ghcr.io/crim50n/filebrowser-webdav:{{ .Tag }}-arm64-s6"
++      - "ghcr.io/crim50n/filebrowser-webdav:v{{ .Major }}-arm64-s6"
      extra_files:
        - docker
  
  docker_manifests:
 -  - name_template: "filebrowser/filebrowser:latest"
-+  - name_template: "ghcr.io/crim50n/filebrowser:latest"
++  - name_template: "ghcr.io/crim50n/filebrowser-webdav:latest"
      image_templates:
 -      - "filebrowser/filebrowser:{{ .Tag }}-amd64"
 -      - "filebrowser/filebrowser:{{ .Tag }}-arm64"
 -      - "filebrowser/filebrowser:{{ .Tag }}-armv7"
 -  - name_template: "filebrowser/filebrowser:{{ .Tag }}"
-+      - "ghcr.io/crim50n/filebrowser:{{ .Tag }}-amd64"
-+      - "ghcr.io/crim50n/filebrowser:{{ .Tag }}-arm64"
-+      - "ghcr.io/crim50n/filebrowser:{{ .Tag }}-armv7"
-+  - name_template: "ghcr.io/crim50n/filebrowser:{{ .Tag }}"
++      - "ghcr.io/crim50n/filebrowser-webdav:{{ .Tag }}-amd64"
++      - "ghcr.io/crim50n/filebrowser-webdav:{{ .Tag }}-arm64"
++      - "ghcr.io/crim50n/filebrowser-webdav:{{ .Tag }}-armv7"
++  - name_template: "ghcr.io/crim50n/filebrowser-webdav:{{ .Tag }}"
      image_templates:
 -      - "filebrowser/filebrowser:{{ .Tag }}-amd64"
 -      - "filebrowser/filebrowser:{{ .Tag }}-arm64"
 -      - "filebrowser/filebrowser:{{ .Tag }}-armv7"
 -  - name_template: "filebrowser/filebrowser:v{{ .Major }}"
-+      - "ghcr.io/crim50n/filebrowser:{{ .Tag }}-amd64"
-+      - "ghcr.io/crim50n/filebrowser:{{ .Tag }}-arm64"
-+      - "ghcr.io/crim50n/filebrowser:{{ .Tag }}-armv7"
-+  - name_template: "ghcr.io/crim50n/filebrowser:v{{ .Major }}"
++      - "ghcr.io/crim50n/filebrowser-webdav:{{ .Tag }}-amd64"
++      - "ghcr.io/crim50n/filebrowser-webdav:{{ .Tag }}-arm64"
++      - "ghcr.io/crim50n/filebrowser-webdav:{{ .Tag }}-armv7"
++  - name_template: "ghcr.io/crim50n/filebrowser-webdav:v{{ .Major }}"
      image_templates:
 -      - "filebrowser/filebrowser:v{{ .Major }}-amd64"
 -      - "filebrowser/filebrowser:v{{ .Major }}-arm64"
 -      - "filebrowser/filebrowser:v{{ .Major }}-armv7"
-+      - "ghcr.io/crim50n/filebrowser:v{{ .Major }}-amd64"
-+      - "ghcr.io/crim50n/filebrowser:v{{ .Major }}-arm64"
-+      - "ghcr.io/crim50n/filebrowser:v{{ .Major }}-armv7"
++      - "ghcr.io/crim50n/filebrowser-webdav:v{{ .Major }}-amd64"
++      - "ghcr.io/crim50n/filebrowser-webdav:v{{ .Major }}-arm64"
++      - "ghcr.io/crim50n/filebrowser-webdav:v{{ .Major }}-armv7"
    ## s6 image manifests
 -  - name_template: "filebrowser/filebrowser:s6"
-+  - name_template: "ghcr.io/crim50n/filebrowser:s6"
++  - name_template: "ghcr.io/crim50n/filebrowser-webdav:s6"
      image_templates:
 -      - "filebrowser/filebrowser:{{ .Tag }}-amd64-s6"
 -      - "filebrowser/filebrowser:{{ .Tag }}-arm64-s6"
 -  - name_template: "filebrowser/filebrowser:{{ .Tag }}-s6"
-+      - "ghcr.io/crim50n/filebrowser:{{ .Tag }}-amd64-s6"
-+      - "ghcr.io/crim50n/filebrowser:{{ .Tag }}-arm64-s6"
-+  - name_template: "ghcr.io/crim50n/filebrowser:{{ .Tag }}-s6"
++      - "ghcr.io/crim50n/filebrowser-webdav:{{ .Tag }}-amd64-s6"
++      - "ghcr.io/crim50n/filebrowser-webdav:{{ .Tag }}-arm64-s6"
++  - name_template: "ghcr.io/crim50n/filebrowser-webdav:{{ .Tag }}-s6"
      image_templates:
 -      - "filebrowser/filebrowser:{{ .Tag }}-amd64-s6"
 -      - "filebrowser/filebrowser:{{ .Tag }}-arm64-s6"
 -  - name_template: "filebrowser/filebrowser:v{{ .Major }}-s6"
-+      - "ghcr.io/crim50n/filebrowser:{{ .Tag }}-amd64-s6"
-+      - "ghcr.io/crim50n/filebrowser:{{ .Tag }}-arm64-s6"
-+  - name_template: "ghcr.io/crim50n/filebrowser:v{{ .Major }}-s6"
++      - "ghcr.io/crim50n/filebrowser-webdav:{{ .Tag }}-amd64-s6"
++      - "ghcr.io/crim50n/filebrowser-webdav:{{ .Tag }}-arm64-s6"
++  - name_template: "ghcr.io/crim50n/filebrowser-webdav:v{{ .Major }}-s6"
      image_templates:
 -      - "filebrowser/filebrowser:v{{ .Major }}-amd64-s6"
 -      - "filebrowser/filebrowser:v{{ .Major }}-arm64-s6"
@@ -133,5 +133,5 @@ index be192ef8..42c0d420 100644
 -          if system_command("/usr/bin/xattr", args: ["-h"]).exit_status == 0
 -            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/filebrowser"]
 -          end
-+      - "ghcr.io/crim50n/filebrowser:v{{ .Major }}-amd64-s6"
-+      - "ghcr.io/crim50n/filebrowser:v{{ .Major }}-arm64-s6"
++      - "ghcr.io/crim50n/filebrowser-webdav:v{{ .Major }}-amd64-s6"
++      - "ghcr.io/crim50n/filebrowser-webdav:v{{ .Major }}-arm64-s6"

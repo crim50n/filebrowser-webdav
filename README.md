@@ -2,6 +2,24 @@
 
 Patch-based release repository for building upstream `filebrowser/filebrowser` with WebDAV support.
 
+## WebDAV support in this build
+
+- WebDAV endpoint: `/webdav`
+- Feature toggle: server setting `enableWebDAV` (UI and CLI flag `--enableWebDAV`)
+- Authentication: HTTP Basic Auth using existing File Browser user credentials
+- WebDAV class: `DAV: 1, 2` (with in-memory lock system per user)
+- CORS preflight: `OPTIONS` is handled for common WebDAV clients
+
+Permission model follows File Browser permissions:
+
+- Read operations (`PROPFIND`, `GET`, `HEAD`) require `Download`
+- `PUT` requires `Create` for new files, `Modify` for existing files
+- `MKCOL` requires `Create`
+- `DELETE` requires `Delete`
+- `COPY` requires both `Download` and `Create`
+- `MOVE` requires `Rename`
+- `LOCK`, `UNLOCK`, `PROPPATCH` require `Modify`
+
 ## How it works
 
 - This repository stores patchsets under `patches/<upstream-tag>/`.

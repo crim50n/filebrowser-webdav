@@ -196,8 +196,9 @@ jobs:
 
       - name: Finalize patched source git state
         run: |
-          git -C .upstream-src config user.name "crim50n"
-          git -C .upstream-src config user.email "crims0n@yandex.ru"
+          git -C .upstream-src config user.name "${GITHUB_ACTOR}"
+          git -C .upstream-src config user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+          git -C .upstream-src remote set-url origin "https://github.com/${GITHUB_REPOSITORY}.git"
           git -C .upstream-src add -A
           git -C .upstream-src commit -m "apply webdav patchset" || true
           git -C .upstream-src tag -f "${GITHUB_REF_NAME}"
@@ -220,3 +221,4 @@ jobs:
           workdir: .upstream-src
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_REPO: ${{ github.repository }}

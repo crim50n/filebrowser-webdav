@@ -2,6 +2,16 @@ diff --git a/.goreleaser.yml b/.goreleaser.yml
 index be192ef8..42c0d420 100644
 --- a/.goreleaser.yml
 +++ b/.goreleaser.yml
+@@ -5,4 +5,9 @@ env:
+ env:
+   - GO111MODULE=on
+ 
++release:
++  github:
++    owner: crim50n
++    name: filebrowser-webdav
++
+ builds:
 @@ -62,8 +62,8 @@ dockers:
      goos: linux
      goarch: amd64

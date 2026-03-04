@@ -33,11 +33,11 @@ Release tags in this repository use:
 
 Examples:
 
-- `v2.60.0-webdav.1`
+- `v2.61.0-webdav.1`
 
 For release tags, upstream base tag is derived automatically:
 
-- `v2.60.0-webdav.1` -> `v2.60.0`
+- `v2.61.0-webdav.1` -> `v2.61.0`
 
 For branch/PR CI runs, base tag comes from `.upstream-default-tag`.
 

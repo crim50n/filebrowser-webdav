@@ -33,13 +33,15 @@ Release tags in this repository use:
 
 Examples:
 
-- `v2.61.2-webdav.1`
+- `v2.63.23-webdav.1`
 
 For release tags, upstream base tag is derived automatically:
 
-- `v2.61.2-webdav.1` -> `v2.61.2`
+- `v2.63.23-webdav.1` -> `v2.63.23`
 
 For branch/PR CI runs, base tag comes from `.upstream-default-tag`.
+
+Current upstream base: [`v2.63.23`](https://github.com/filebrowser/filebrowser/releases/tag/v2.63.23).
 
 ## Publishing targets
 
